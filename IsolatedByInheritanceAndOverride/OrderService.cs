@@ -14,27 +14,32 @@ namespace IsolatedByInheritanceAndOverride
 
         public void SyncBookOrders()
         {
-            var orders = this.GetOrders();
+            var orders = GetOrders();
 
             // only get orders of book
             var ordersOfBook = orders.Where(x => x.Type == "Book");
 
-            var bookDao = new BookDao();
+            var bookDao = GetBookDao();
             foreach (var order in ordersOfBook)
             {
                 bookDao.Insert(order);
             }
         }
 
-        private List<Order> GetOrders()
+        protected virtual IBookDao GetBookDao()
+        {
+            return new BookDao();
+        }
+
+        protected virtual List<Order> GetOrders()
         {
             // parse csv file to get orders
             var result = new List<Order>();
 
             // directly depend on File I/O
-            using (StreamReader sr = new StreamReader(this._filePath, Encoding.UTF8))
+            using (var sr = new StreamReader(_filePath, Encoding.UTF8))
             {
-                int rowCount = 0;
+                var rowCount = 0;
 
                 while (sr.Peek() > -1)
                 {
@@ -45,9 +50,9 @@ namespace IsolatedByInheritanceAndOverride
                     // Skip CSV header line
                     if (rowCount > 1)
                     {
-                        string[] line = content.Trim().Split(',');
+                        var line = content.Trim().Split(',');
 
-                        result.Add(this.Mapping(line));
+                        result.Add(Mapping(line));
                     }
                 }
             }
@@ -66,29 +71,6 @@ namespace IsolatedByInheritanceAndOverride
             };
 
             return result;
-        }
-    }
-
-    public class Order
-    {
-        public string Type { get; set; }
-
-        public int Price { get; set; }
-
-        public string ProductName { get; set; }
-
-        public string CustomerName { get; set; }
-    }
-
-    public class BookDao
-    {
-        public void Insert(Order order)
-        {
-            // directly depend on some web service
-            //var client = new HttpClient();
-            //var response = client.PostAsync<Order>("http://api.joey.io/Order", order, new JsonMediaTypeFormatter()).Result; 
-            //response.EnsureSuccessStatusCode();
-            throw new NotImplementedException();
         }
     }
 }
