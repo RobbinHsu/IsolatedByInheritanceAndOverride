@@ -16,6 +16,8 @@ namespace IsolatedByInheritanceAndOverride.Test
     [TestFixture]
     public class OrderServiceTest
     {
+        private IBookDao _mockBookDao;
+        private OrderServiceForTest _orderServiceForTest;
         private TestContext testContextInstance;
 
         /// <summary>
@@ -28,30 +30,43 @@ namespace IsolatedByInheritanceAndOverride.Test
             set { testContextInstance = value; }
         }
 
-        public OrderServiceTest()
+        [SetUp]
+        public void Setup()
         {
-            //
-            // TODO:  在此加入建構函式的程式碼
-            //
+            _orderServiceForTest = new OrderServiceForTest();
+            _mockBookDao = Substitute.For<IBookDao>();
         }
 
         [Test]
         public void Test_SyncBookOrders_3_Orders_Only_2_book_order()
         {
-            var orderServiceForTest = new OrderServiceForTest();
-            orderServiceForTest.SetOrders(new List<Order>()
-            {
-                new Order() {Type = "Book"},
-                new Order() {Type = "CD"},
-                new Order() {Type = "Book"},
-            });
+            GivenOrders(
+                CreateOrder("Book"),
+                CreateOrder("CD"),
+                CreateOrder("Book")
+            );
 
-            var mockBookDao = Substitute.For<IBookDao>();
-            orderServiceForTest.SetBookDao(mockBookDao);
+            _orderServiceForTest.SetBookDao(_mockBookDao);
 
-            orderServiceForTest.SyncBookOrders();
+            _orderServiceForTest.SyncBookOrders();
 
-            mockBookDao.Received(2).Insert(Arg.Is<Order>(x => x.Type == "Book"));
+            BookDaoShouldInsertTimes(2);
+        }
+
+        private void GivenOrders(params Order[] orders)
+        {
+            _orderServiceForTest.SetOrders(orders.ToList());
+        }
+
+
+        private void BookDaoShouldInsertTimes(int times)
+        {
+            _mockBookDao.Received(times).Insert(Arg.Is<Order>(x => x.Type == "Book"));
+        }
+
+        private static Order CreateOrder(string type)
+        {
+            return new Order() {Type = type};
         }
     }
 
